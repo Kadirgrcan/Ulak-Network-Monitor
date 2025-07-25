@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SNMP Sorgu Sonuçları</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- Chart.js kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- date-fns kütüphanesi (zaman formatlama için) -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Font Awesome ikonları -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef); /* Hafif gradyan arka plan */
+            color: #333;
+        }
+        .container-main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            background-color: #ffffff;
+            padding: 2.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .section-header {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1a202c; /* Darker text for headings */
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+        .section-header::after {
+            content: '';
+            display: block;
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(to right, #4c51bf, #667eea); /* Indigo gradient underline */
+            margin: 0.75rem auto 0;
+            border-radius: 2px;
+        }
+        .info-card {
+            background-color: #f8fafc; /* Light blue-gray */
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0; /* Subtle border */
+        }
+        .metric-card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+        }
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
+        }
+        .metric-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .metric-card-header i {
+            font-size: 1.8rem;
+            margin-right: 0.75rem;
+        }
+        .metric-card-header h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748; /* Darker text */
+        }
+        .chart-container {
+            position: relative;
+            height: 220px; /* Consistent height for charts */
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .data-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #4a5568; /* Slightly darker gray */
+        }
+        .alert-message {
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .alert-info { background-color: #e0f2fe; color: #0284c7; border: 1px solid #7dd3fc; }
+        .alert-warning { background-color: #fffbeb; color: #d97706; border: 1px solid #fbbf24; }
+        .alert-danger { background-color: #fee2e2; color: #dc2626; border: 1px solid #ef4444; }
+
+        .btn-primary-custom {
+            background-image: linear-gradient(to right, #4c51bf, #667eea); /* Indigo to Blue */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        .btn-primary-custom:hover {
+            background-image: linear-gradient(to right, #3e4396, #536ad0);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        .table-custom {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 0.75rem;
+            overflow: hidden; /* Ensures rounded corners apply */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        .table-custom th, .table-custom td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .table-custom th {
+            background-color: #4c51bf; /* Indigo header */
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        .table-custom tbody tr:nth-child(odd) {
+            background-color: #f8fafc; /* Zebra striping */
+        }
+        .table-custom tbody tr:hover {
+            background-color: #edf2f7; /* Hover effect */
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px; /* Pill shape */
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .status-badge.up { background-color: #d1fae5; color: #065f46; } /* Green */
+        .status-badge.down { background-color: #fee2e2; color: #991b1b; } /* Red */
+        .status-badge.unknown { background-color: #e0e7ff; color: #4338ca; } /* Indigo */
+        .status-badge.other { background-color: #f3f4f6; color: #4b5563; } /* Gray */
+
+        /* Toggle button style */
+        .toggle-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: background-color 0.2s ease;
+        }
+        .toggle-button:hover {
+            background-color: #e2e8f0;
+        }
+        .toggle-button i {
+            transition: transform 0.3s ease;
+        }
+        .toggle-button.rotated i {
+            transform: rotate(90deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-main">
+        <h1 class="section-header">SNMP Sorgu Sonuçları</h1>
+
+        <div class="info-card mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">Sorgu Bilgileri</h2>
+            <p class="text-lg text-gray-700 mb-2"><strong>IP Adresi:</strong> <span class="font-semibold">{{ ip }}</span></p>
+            <p class="text-lg text-gray-700"><strong>Community String:</strong> <span class="font-semibold">{{ community }}</span></p>
+            {% if general_error %}
+                <div class="alert-danger alert-message" role="alert">
+                    <strong class="font-bold">Genel Hata:</strong>
+                    <span class="block sm:inline">{{ general_error }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- SNMP Veri Bölümleri -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+            <!-- CPU Bilgileri -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <i class="fas fa-microchip text-blue-600"></i>
+                    <h3>CPU Kullanımı</h3>
+                </div>
+                {% if cpu_error.message != "Veri Yok" %}
+                    <div class="alert-{{ cpu_error.type }} alert-message" role="alert">
+                        {{ cpu_error.message }}
+                    </div>
+                {% elif cpu_values %}
+                    <p class="data-value">Ortalama Yük: <span class="font-bold">{{ "%.2f"|format(cpu_values|sum / cpu_values|length) if cpu_values else "N/A" }}%</span></p>
+                    <div class="chart-container">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">CPU verisi alınamadı.</p>
+                {% endif %}
+            </div>
+
+            <!-- RAM Bilgileri -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <i class="fas fa-memory text-green-600"></i>
+                    <h3>RAM Kullanımı</h3>
+                </div>
+                {% if ram_error.message != "Veri Yok" %}
+                    <div class="alert-{{ ram_error.type }} alert-message" role="alert">
+                        {{ ram_error.message }}
+                    </div>
+                {% elif total_ram_kbytes is not none %}
+                    <p class="data-value mb-1">Toplam RAM: <span class="font-bold">{{ "%.2f"|format(total_ram_kbytes / 1024 / 1024) }} GB</span></p>
+                    <p class="data-value mb-1">Kullanılan RAM: <span class="font-bold">{{ "%.2f"|format(ram_kbytes / 1024 / 1024) if ram_kbytes is not none else "N/A" }} GB</span></p>
+                    <p class="data-value">Kullanım Yüzdesi: <span class="font-bold">{{ "%.2f"|format(ram_used_percent) if ram_used_percent is not none else "N/A" }}%</span></p>
+                    <div class="chart-container">
+                        <canvas id="ramChart"></canvas>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">RAM verisi alınamadı.</p>
+                {% endif %}
+            </div>
+
+            <!-- Disk Bilgileri -->
+            <div class="metric-card">
+                <div class="metric-card-header flex justify-between items-center">
+                    <div class="flex items-center">
+                        <i class="fas fa-hdd text-yellow-600"></i>
+                        <h3>Disk Kullanımı</h3>
+                    </div>
+                    {% if disks %}
+                        <button class="toggle-button" onclick="toggleTable('diskTableContainer', this)">
+                            <i class="fas fa-chevron-right text-gray-500"></i>
+                        </button>
+                    {% endif %}
+                </div>
+                {% if disk_error.message != "Veri Yok" %}
+                    <div class="alert-{{ disk_error.type }} alert-message" role="alert">
+                        {{ disk_error.message }}
+                    </div>
+                {% elif disks %}
+                    <div id="diskTableContainer" class="hidden">
+                        <div class="overflow-x-auto">
+                            <table class="table-custom min-w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="w-1/4">Disk</th>
+                                        <th class="w-1/4">Toplam Boyut</th>
+                                        <th class="w-1/4">Kullanılan Boyut</th>
+                                        <th class="w-1/4">Kullanım Yüzdesi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for disk in disks %}
+                                        <tr>
+                                            <td>
+                                                <strong>{{ disk.descr }}</strong>
+                                                {% if disk.descr == '/dev/shm' %}
+                                                    <p class="text-xs text-gray-500">(Paylaşımlı Bellek - RAM tabanlı geçici dosya sistemi, süreçler arası iletişimde kullanılır.)</p>
+                                                {% elif disk.descr == '/run' %}
+                                                    <p class="text-xs text-gray-500">(Çalışan Süreçler - RAM tabanlı geçici dosya sistemi, sistemin çalışma zamanı verilerini tutar.)</p>
+                                                {% elif disk.descr == '/sys/fs/cgroup' %}
+                                                    <p class="text-xs text-gray-500">(Cgroup Dosya Sistemi - Linux çekirdek kaynak yönetimi için kullanılan sanal dosya sistemi.)</p>
+                                                {% elif disk.descr == '/' %}
+                                                    <p class="text-xs text-gray-500">(Kök Dosya Sistemi - İşletim sisteminin ana dizini ve tüm diğer dizinlerin başlangıç noktası.)</p>
+                                                {% elif disk.descr == '/run/user/1000' %}
+                                                    <p class="text-xs text-gray-500">(Kullanıcı Çalışma Dizini - Kullanıcıya özel geçici dosyalar ve çalışma zamanı verileri için.)</p>
+                                                {% else %}
+                                                    <p class="text-xs text-gray-500">(Bilinmeyen Disk Türü)</p>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ "%.2f"|format(disk.total_gb) }} GB</td>
+                                            <td>{{ "%.2f"|format(disk.used_gb) }} GB</td>
+                                            <td><span class="font-bold">{{ "%.2f"|format(disk.usage_percent) }}%</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="diskChart"></canvas>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">Disk verisi alınamadı.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Diğer Bilgiler -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10">
+            <!-- Sistem Bilgisi -->
+            <div class="metric-card">
+                <div class="metric-card-header flex justify-between items-center">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-purple-600"></i>
+                        <h3>Sistem Bilgisi</h3>
+                    </div>
+                    {% if sysinfo_lines %}
+                        <button class="toggle-button" onclick="toggleTable('sysinfoTableContainer', this)">
+                            <i class="fas fa-chevron-right text-gray-500"></i>
+                        </button>
+                    {% endif %}
+                </div>
+                {% if sysinfo_error.message != "Veri Yok" %}
+                    <div class="alert-{{ sysinfo_error.type }} alert-message" role="alert">
+                        {{ sysinfo_error.message }}
+                    </div>
+                {% elif sysinfo_lines %} {# sysinfo_lines artık parsed_sysinfo'yu temsil ediyor #}
+                    <div id="sysinfoTableContainer" class="hidden">
+                        <div class="overflow-x-auto">
+                            <table class="table-custom min-w-full">
+                                <thead>
+                                    <tr>
+                                        <th class="w-1/3">Özellik</th>
+                                        <th class="w-2/3">Değer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in sysinfo_lines %}
+                                        <tr>
+                                            <td>{{ item.name }}</td>
+                                            <td>{{ item.value }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600">Sistem bilgisi alınamadı.</p>
+                {% endif %}
+            </div>
+
+            <!-- Çalışma Süresi (Uptime) -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <i class="fas fa-clock text-pink-600"></i>
+                    <h3>Çalışma Süresi (Uptime)</h3>
+                </div>
+                {% if uptime_error.message != "Veri Yok" %}
+                    <div class="alert-{{ uptime_error.type }} alert-message" role="alert">
+                        {{ uptime_error.message }}
+                    </div>
+                {% elif uptime_ticks is not none %}
+                    <p id="realtimeUptime" class="data-value">Yükleniyor...</p>
+                {% else %}
+                    <p class="text-gray-600">Çalışma süresi bilgisi alınamadı.</p>
+                {% endif %}
+            </div>
+
+            <!-- Sıcaklık -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <i class="fas fa-thermometer-half text-red-600"></i>
+                    <h3>Sıcaklık</h3>
+                </div>
+                {% if temp_error.message != "Veri Yok" %}
+                    <div class="alert-{{ temp_error.type }} alert-message" role="alert">
+                        {{ temp_error.message }}
+                    </div>
+                {% elif temperature is not none %}
+                    <p class="data-value">{{ temperature }} °C</p>
+                {% else %}
+                    <p class="text-gray-600">Sıcaklık bilgisi alınamadı.</p>
+                {% endif %}
+            </div>
+
+            <!-- Kurulmuş TCP Bağlantıları -->
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <i class="fas fa-network-wired text-indigo-600"></i>
+                    <h3>TCP Bağlantıları</h3>
+                </div>
+                {% if conn_error.message != "Veri Yok" %}
+                    <div class="alert-{{ conn_error.type }} alert-message" role="alert">
+                        {{ conn_error.message }}
+                    </div>
+                {% elif established_connections is not none %}
+                    <p class="data-value">Kurulmuş Bağlantı Sayısı: <span class="font-bold">{{ established_connections }}</span></p>
+                {% else %}
+                    <p class="text-gray-600">TCP bağlantı bilgisi alınamadı.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Ağ Arayüzleri -->
+        <div class="metric-card p-6 mb-10">
+            <div class="metric-card-header">
+                <i class="fas fa-ethernet text-gray-700"></i>
+                <h3>Ağ Arayüzleri</h3>
+            </div>
+            {% if iface_error.message != "Veri Yok" %}
+                <div class="alert-{{ iface_error.type }} alert-message" role="alert">
+                    {{ iface_error.message }}
+                </div>
+            {% elif interfaces %}
+                <div class="overflow-x-auto">
+                    <table class="table-custom min-w-full">
+                        <thead>
+                            <tr>
+                                <th>Arayüz</th>
+                                <th>Hız (Mbps)</th>
+                                <th>MAC Adresi</th>
+                                <th>Durum</th>
+                                <th>Gelen (Bayt)</th>
+                                <th>Giden (Bayt)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for iface in interfaces %}
+                                <tr>
+                                    <td>{{ iface.descr }}</td>
+                                    <td>{{ iface.speed_mbps }}</td>
+                                    <td>{{ iface.phys_address }}</td>
+                                    <td>
+                                        <span class="status-badge {{ iface.oper_status }}">
+                                            {{ iface.oper_status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ iface.in_octets }}</td>
+                                    <td>{{ iface.out_octets }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-gray-600">Ağ Arayüz verisi alınamadı.</p>
+            {% endif %}
+        </div>
+
+        <div class="text-center mt-10">
+            <a href="/" class="btn-primary-custom">
+                <i class="fas fa-home mr-2"></i>
+                Ana Sayfaya Dön
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // Chart.js global ayarları
+        Chart.defaults.font.family = 'Inter';
+        Chart.defaults.color = '#4B5563'; // gray-700
+
+        // Uptime formatlama fonksiyonu
+        function formatUptime(ticks) {
+            if (ticks === null || isNaN(ticks) || ticks < 0) {
+                return "N/A";
+            }
+            const seconds = ticks / 100;
+            const days = Math.floor(seconds / (24 * 3600));
+            const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${days} gün, ${hours} saat, ${minutes} dakika, ${remainingSeconds} saniye`;
+        }
+
+        // Tablo görünürlüğünü değiştiren fonksiyon
+        function toggleTable(containerId, buttonElement) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.classList.toggle('hidden');
+                // Ok ikonunu döndür
+                if (buttonElement) {
+                    buttonElement.querySelector('i').classList.toggle('rotated');
+                }
+            }
+        }
+
+        // CPU Chart
+        let cpuChartInstance = null;
+        const cpuValues = {{ cpu_values | tojson }}; // Flask'tan gelen CPU verisi
+
+        if (cpuValues && cpuValues.length > 0) {
+            const ctxCpu = document.getElementById('cpuChart').getContext('2d');
+            cpuChartInstance = new Chart(ctxCpu, {
+                type: 'bar',
+                data: {
+                    labels: cpuValues.map((_, i) => `CPU ${i + 1}`),
+                    datasets: [{
+                        label: 'CPU Yükü (%)',
+                        data: cpuValues,
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)', // blue-500
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5, /* Yuvarlak köşeler */
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Yük (%)',
+                                color: '#374151'
+                            },
+                            grid: {
+                                color: 'rgba(229, 231, 235, 0.5)' /* Hafif ızgara çizgileri */
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(31, 41, 55, 0.9)', /* Koyu tooltip */
+                            titleColor: '#ffffff',
+                            bodyColor: '#e5e7eb',
+                            borderColor: '#6366f1',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                        }
+                    }
+                }
+            });
+        }
+
+        // RAM Chart
+        let ramChartInstance = null;
+        const ramUsedPercent = {{ ram_used_percent | tojson }}; // Flask'tan gelen RAM kullanım yüzdesi
+
+        if (ramUsedPercent !== null && ramUsedPercent >= 0) {
+            const ctxRam = document.getElementById('ramChart').getContext('2d');
+            ramChartInstance = new Chart(ctxRam, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Kullanılan', 'Boş'],
+                    datasets: [{
+                        data: [ramUsedPercent, 100 - ramUsedPercent],
+                        backgroundColor: [
+                            'rgba(16, 185, 129, 0.7)', // green-500
+                            'rgba(209, 213, 219, 0.7)' // gray-300
+                        ],
+                        borderColor: [
+                            'rgba(16, 185, 129, 1)',
+                            'rgba(209, 213, 219, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#374151'
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e5e7eb',
+                            borderColor: '#6366f1',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed.toFixed(2) + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Disk Chart
+        let diskChartInstance = null;
+        const disks = {{ disks | tojson }}; // Flask'tan gelen Disk verisi
+
+        if (disks && disks.length > 0) {
+            const ctxDisk = document.getElementById('diskChart').getContext('2d');
+            const diskLabels = disks.map(d => d.descr);
+            const diskUsageData = disks.map(d => d.usage_percent);
+
+            diskChartInstance = new Chart(ctxDisk, {
+                type: 'bar',
+                data: {
+                    labels: diskLabels,
+                    datasets: [{
+                        label: 'Disk Kullanımı (%)',
+                        data: diskUsageData,
+                        backgroundColor: 'rgba(245, 158, 11, 0.7)', // yellow-500
+                        borderColor: 'rgba(245, 158, 11, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Kullanım (%)',
+                                color: '#374151'
+                            },
+                            grid: {
+                                color: 'rgba(229, 231, 235, 0.5)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(31, 41, 55, 0.9)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#e5e7eb',
+                            borderColor: '#6366f1',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                        }
+                    }
+                }
+            });
+        }
+
+        // Uptime'ı gerçek zamanlı güncelleme
+        let uptimeInterval = null;
+        const initialUptimeTicks = {{ uptime_ticks | tojson }}; // Flask'tan gelen ilk uptime ticks
+
+        if (initialUptimeTicks !== null) {
+            const uptimeElement = document.getElementById('realtimeUptime');
+            let currentUptimeSeconds = initialUptimeTicks / 100; // Timeticks'i saniyeye çevir
+
+            function updateUptimeDisplay() {
+                uptimeElement.innerText = formatUptime(currentUptimeSeconds * 100); // Geri Timeticks'e çevirip formatla
+                currentUptimeSeconds += 1; // Her saniye bir artır
+            }
+
+            // Sayfa yüklendiğinde hemen güncelle
+            updateUptimeDisplay();
+            // Her saniye güncelle
+            uptimeInterval = setInterval(updateUptimeDisplay, 1000);
+        }
+
+        // Sayfadan ayrılırken interval'ları temizle
+        window.addEventListener('beforeunload', () => {
+            if (uptimeInterval) clearInterval(uptimeInterval);
+        });
+
+    </script>
+</body>
+</html>

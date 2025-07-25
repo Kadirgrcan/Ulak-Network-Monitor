@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ulak Haberleşme - Gerçek Zamanlı SpeedTest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f0f2f5;
+            font-family: 'Inter', sans-serif;
+            color: #343a40;
+        }
+        .navbar {
+            background: #2c3e50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #ffffff !important;
+        }
+        .header-section {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(to right, #3498db, #2980b9); /* Mavi gradient */
+            color: white;
+            margin-bottom: 30px;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .header-section h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 15px;
+        }
+        .btn-custom {
+            background-color: #28a745; /* Yeşil */
+            border-color: #28a745;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-custom:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+            transform: translateY(-2px);
+        }
+        .btn-secondary-custom {
+            background-color: #6c757d; /* Gri */
+            border-color: #6c757d;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-secondary-custom:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            transform: translateY(-2px);
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-top: 50px;
+        }
+        .speed-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #3498db;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .speed-label {
+            font-size: 1.2rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #3498db;
+        }
+        /* Chart için ek stil */
+        .chart-container {
+            position: relative;
+            height: 400px; /* Grafiğin yüksekliğini ayarla */
+            width: 100%;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">🌐 Ulak Haberleşme</a>
+    </div>
+</nav>
+
+<div class="header-section">
+    <h1>Gerçek Zamanlı SpeedTest</h1>
+    <p>Hedef cihazınızdaki ağ arayüzlerinin anlık trafik hızlarını izleyin.</p>
+</div>
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">SpeedTest Ayarları</div>
+        <div class="card-body">
+            <div class="mb-3">
+                <label for="ip" class="form-label">Hedef IP Adresi:</label>
+                <input type="text" class="form-control" id="ip" name="ip" placeholder="Örn: 192.168.1.1 veya 10.0.0.1" required>
+            </div>
+            <div class="mb-3">
+                <label for="community" class="form-label">SNMP Community String:</label>
+                <input type="text" class="form-control" id="community" name="community" value="public" placeholder="Örn: public">
+            </div>
+            <div class="mb-3">
+                <label for="interfaceSelect" class="form-label">Ağ Arayüzü Seçin:</label>
+                <select class="form-select" id="interfaceSelect" disabled>
+                    <option value="">Arayüzler Yükleniyor...</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-custom" id="startTestButton" disabled>
+                <i class="fas fa-play me-2"></i> Testi Başlat
+            </button>
+            <button type="button" class="btn btn-secondary-custom" id="stopTestButton" style="display: none;">
+                <i class="fas fa-stop me-2"></i> Testi Durdur
+            </button>
+            <button type="button" class="btn btn-secondary-custom" id="resetChartButton" style="display: none;">
+                <i class="fas fa-sync-alt me-2"></i> Grafiği Sıfırla
+            </button>
+            <div id="loadingSpinner" class="text-center mt-3" style="display: none;">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Yükleniyor...</span>
+                </div>
+                <p class="mt-2">Arayüzler yükleniyor veya veri alınıyor...</p>
+            </div>
+            <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">Anlık Hızlar</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="speed-display" id="downloadSpeed">0.00</div>
+                    <div class="speed-label">İndirme (Mbps)</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="speed-display" id="uploadSpeed">0.00</div>
+                    <div class="speed-label">Yükleme (Mbps)</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="speedChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/" class="btn btn-secondary-custom">
+            <i class="fas fa-arrow-left me-2"></i> Ana Sayfaya Dön
+        </a>
+    </div>
+</div>
+
+<footer class="footer">
+    © 2025 Ulak Haberleşme Staj Projesi. Tüm Hakları Saklıdır.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
+
+<script>
+    console.log("DEBUG: speedtest.html yüklendi.");
+
+    const ipInput = document.getElementById('ip');
+    const communityInput = document.getElementById('community');
+    const interfaceSelect = document.getElementById('interfaceSelect');
+    const startTestButton = document.getElementById('startTestButton');
+    const stopTestButton = document.getElementById('stopTestButton');
+    const resetChartButton = document.getElementById('resetChartButton');
+    const downloadSpeedDisplay = document.getElementById('downloadSpeed');
+    const uploadSpeedDisplay = document.getElementById('uploadSpeed');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorMessage = document.getElementById('errorMessage');
+    const speedChartCanvas = document.getElementById('speedChart');
+
+    let fetchInterval;
+    let lastInOctets = null;
+    let lastOutOctets = null;
+    let lastFetchTime = null;
+    let speedChart; // Chart.js örneği
+
+    // Chart.js'i başlat
+    function initChart() {
+        console.log("DEBUG: initChart() çağrıldı.");
+        if (speedChart) {
+            console.log("DEBUG: Mevcut grafik yok ediliyor.");
+            speedChart.destroy(); // Eğer daha önce bir grafik varsa yok et
+        }
+        if (!speedChartCanvas) {
+            console.error("HATA: speedChartCanvas DOM'da bulunamadı!");
+            showError("Grafik alanı bulunamadı. Lütfen sayfa yapısını kontrol edin.");
+            return;
+        }
+        speedChart = new Chart(speedChartCanvas, {
+            type: 'line',
+            data: {
+                labels: [], // Zaman etiketleri burada olacak
+                datasets: [
+                    {
+                        label: 'İndirme Hızı (Mbps)',
+                        data: [],
+                        borderColor: '#3498db', // Mavi
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Yükleme Hızı (Mbps)',
+                        data: [],
+                        borderColor: '#28a745', // Yeşil
+                        backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time', // Zaman tabanlı eksen
+                        time: {
+                            unit: 'second',
+                            displayFormats: {
+                                second: 'HH:mm:ss'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Zaman'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Hız (Mbps)'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+        console.log("DEBUG: Chart.js grafiği başlatıldı.");
+    }
+
+    // Hata mesajını gösteren fonksiyon
+    function showError(message) {
+        console.error("HATA GÖSTERİLİYOR:", message);
+        errorMessage.textContent = message;
+        errorMessage.style.display = 'block';
+    }
+
+    // Hata mesajını gizleyen fonksiyon
+    function hideError() {
+        if (errorMessage.style.display === 'block') {
+            console.log("DEBUG: Hata mesajı gizleniyor.");
+        }
+        errorMessage.style.display = 'none';
+    }
+
+    // Arayüzleri yükleyen fonksiyon
+    async function loadInterfaces() {
+        console.log("DEBUG: loadInterfaces() çağrıldı.");
+        const ip = ipInput.value.trim();
+        const community = communityInput.value.trim();
+
+        if (!ip) {
+            showError("Lütfen bir IP adresi girin.");
+            return;
+        }
+
+        interfaceSelect.innerHTML = '<option value="">Arayüzler Yükleniyor...</option>';
+        interfaceSelect.disabled = true;
+        startTestButton.disabled = true;
+        loadingSpinner.style.display = 'block';
+        hideError();
+        console.log(`DEBUG: Arayüzler yükleniyor... IP: ${ip}, Community: ${community}`);
+
+        try {
+            const response = await fetch(`/get_interfaces?ip=${ip}&community=${community}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP hatası! Durum: ${response.status}, Yanıt: ${errorText}`);
+            }
+            const data = await response.json();
+            console.log("DEBUG: Arayüz verisi alındı:", data);
+
+            if (data.error) {
+                showError(`Arayüzler yüklenirken hata: ${data.error}`);
+                interfaceSelect.innerHTML = '<option value="">Arayüzler Yüklenemedi</option>';
+            } else if (data.interfaces && data.interfaces.length > 0) {
+                interfaceSelect.innerHTML = '<option value="">Arayüz Seçin</option>';
+                data.interfaces.forEach(iface => {
+                    const option = document.createElement('option');
+                    option.value = iface.index;
+                    option.textContent = `${iface.descr} (Index: ${iface.index})`;
+                    interfaceSelect.appendChild(option);
+                });
+                interfaceSelect.disabled = false;
+                startTestButton.disabled = false;
+                console.log("DEBUG: Arayüzler başarıyla yüklendi.");
+            } else {
+                showError("Cihazda ağ arayüzü bulunamadı veya SNMP sorgusu başarısız oldu.");
+                interfaceSelect.innerHTML = '<option value="">Arayüz Bulunamadı</option>';
+                console.warn("UYARI: Arayüz bulunamadı veya boş arayüz listesi.");
+            }
+        } catch (error) {
+            showError(`Arayüzler yüklenirken ağ hatası: ${error.message}`);
+            interfaceSelect.innerHTML = '<option value="">Arayüzler Yüklenemedi</option>';
+            console.error("HATA: loadInterfaces() sırasında istisna:", error);
+        } finally {
+            loadingSpinner.style.display = 'none';
+            console.log("DEBUG: loadInterfaces() tamamlandı.");
+        }
+    }
+
+    // Hız verilerini çeken ve hesaplayan fonksiyon
+    async function fetchSpeedData() {
+        console.log("DEBUG: fetchSpeedData() çağrıldı.");
+        const ip = ipInput.value.trim();
+        const community = communityInput.value.trim();
+        const selectedInterface = interfaceSelect.value;
+
+        if (!ip || !selectedInterface) {
+            stopTest();
+            showError("Lütfen IP adresi ve bir arayüz seçin.");
+            console.warn("UYARI: IP veya seçili arayüz eksik, test durduruldu.");
+            return;
+        }
+
+        try {
+            const response = await fetch(`/get_speed_data?ip=${ip}&community=${community}&iface=${selectedInterface}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP hatası! Durum: ${response.status}, Yanıt: ${errorText}`);
+            }
+            const data = await response.json();
+            console.log("DEBUG: Hız verisi alındı:", data);
+
+            if (data.error) {
+                showError(`Hız verisi alınırken hata: ${data.error}`);
+                stopTest();
+                console.error("HATA: Hız verisi API'den hata döndürdü:", data.error);
+                return;
+            }
+
+            const currentInOctets = data.in_octets;
+            const currentOutOctets = data.out_octets;
+            const currentTime = new Date(); // Date nesnesi olarak al
+
+            console.log(`DEBUG: Current In: ${currentInOctets}, Out: ${currentOutOctets}, Time: ${currentTime.toLocaleTimeString()}`);
+
+            if (lastInOctets !== null && lastOutOctets !== null && lastFetchTime !== null) {
+                const timeDiffSeconds = (currentTime.getTime() - lastFetchTime.getTime()) / 1000; // saniye
+
+                if (timeDiffSeconds > 0) {
+                    // Octets'ten bit'e (1 octet = 8 bit)
+                    const downloadBits = (currentInOctets - lastInOctets) * 8;
+                    const uploadBits = (currentOutOctets - lastOutOctets) * 8;
+
+                    // Mbps'ye çevir (1 Mbps = 1,000,000 bps)
+                    const downloadMbps = (downloadBits / timeDiffSeconds) / 1_000_000;
+                    const uploadMbps = (uploadBits / timeDiffSeconds) / 1_000_000;
+
+                    downloadSpeedDisplay.textContent = downloadMbps.toFixed(2);
+                    uploadSpeedDisplay.textContent = uploadMbps.toFixed(2);
+                    console.log(`DEBUG: Hesaplanan İndirme: ${downloadMbps.toFixed(2)} Mbps, Yükleme: ${uploadMbps.toFixed(2)} Mbps`);
+
+                    // Grafiği güncelle
+                    if (speedChart) { // speedChart'ın tanımlı olduğundan emin ol
+                        speedChart.data.labels.push(currentTime);
+                        speedChart.data.datasets[0].data.push(downloadMbps);
+                        speedChart.data.datasets[1].data.push(uploadMbps);
+
+                        // Grafikte sadece son N noktayı tutmak için (isteğe bağlı)
+                        const maxDataPoints = 60; // Son 60 saniye verisi (2 saniyede bir çekildiği için 2 dakika)
+                        if (speedChart.data.labels.length > maxDataPoints) {
+                            speedChart.data.labels.shift();
+                            speedChart.data.datasets[0].data.shift();
+                            speedChart.data.datasets[1].data.shift();
+                        }
+                        speedChart.update();
+                        console.log("DEBUG: Grafik güncellendi.");
+                    } else {
+                        console.warn("UYARI: speedChart nesnesi tanımlı değil, grafik güncellenemedi.");
+                    }
+                } else {
+                    console.warn("UYARI: Zaman farkı sıfır veya negatif, hız hesaplanamadı.");
+                }
+            } else {
+                console.log("DEBUG: İlk veri çekimi, hız hesaplanmıyor, sadece son değerler kaydediliyor.");
+            }
+
+            lastInOctets = currentInOctets;
+            lastOutOctets = currentOutOctets;
+            lastFetchTime = currentTime;
+            hideError(); // Başarılı veri alımında hatayı gizle
+
+        } catch (error) {
+            showError(`Hız verisi alınırken ağ hatası: ${error.message}`);
+            stopTest();
+            console.error("HATA: fetchSpeedData() sırasında istisna:", error);
+        }
+    }
+
+    // Testi başlatan fonksiyon
+    function startTest() {
+        console.log("DEBUG: startTest() çağrıldı.");
+        const ip = ipInput.value.trim();
+        const selectedInterface = interfaceSelect.value;
+
+        if (!ip || !selectedInterface) {
+            showError("Lütfen IP adresi ve bir arayüz seçin.");
+            console.warn("UYARI: IP veya seçili arayüz eksik, test başlatılamadı.");
+            return;
+        }
+
+        // Önceki değerleri sıfırla
+        lastInOctets = null;
+        lastOutOctets = null;
+        lastFetchTime = null;
+        downloadSpeedDisplay.textContent = '0.00';
+        uploadSpeedDisplay.textContent = '0.00';
+        hideError();
+        initChart(); // Grafiği sıfırla ve yeniden başlat
+        console.log("DEBUG: Grafik sıfırlandı ve yeniden başlatıldı.");
+
+        // İlk veriyi hemen çek
+        fetchSpeedData();
+
+        // Belirli aralıklarla veri çekmeye başla (örneğin her 2 saniyede bir)
+        fetchInterval = setInterval(fetchSpeedData, 2000); 
+        console.log("DEBUG: Veri çekme aralığı başlatıldı (her 2 saniyede bir).");
+
+        startTestButton.style.display = 'none';
+        stopTestButton.style.display = 'inline-block';
+        resetChartButton.style.display = 'inline-block';
+        ipInput.disabled = true;
+        communityInput.disabled = true;
+        interfaceSelect.disabled = true;
+        console.log("DEBUG: Kontroller devre dışı bırakıldı, test başladı.");
+    }
+
+    // Testi durduran fonksiyon
+    function stopTest() {
+        console.log("DEBUG: stopTest() çağrıldı.");
+        clearInterval(fetchInterval);
+        startTestButton.style.display = 'inline-block';
+        stopTestButton.style.display = 'none';
+        resetChartButton.style.display = 'none'; // Test durunca grafik sıfırlama butonunu gizle
+        ipInput.disabled = false;
+        communityInput.disabled = false;
+        interfaceSelect.disabled = false;
+        lastInOctets = null;
+        lastOutOctets = null;
+        lastFetchTime = null;
+        console.log("DEBUG: Test durduruldu, kontroller etkinleştirildi.");
+    }
+
+    // Grafiği sıfırlayan fonksiyon
+    function resetChart() {
+        console.log("DEBUG: resetChart() çağrıldı.");
+        if (speedChart) {
+            speedChart.data.labels = [];
+            speedChart.data.datasets[0].data = [];
+            speedChart.data.datasets[1].data = [];
+            speedChart.update();
+            console.log("DEBUG: Grafik verileri sıfırlandı.");
+        }
+        downloadSpeedDisplay.textContent = '0.00';
+        uploadSpeedDisplay.textContent = '0.00';
+        lastInOctets = null;
+        lastOutOctets = null;
+        lastFetchTime = null;
+        console.log("DEBUG: Hız göstergeleri ve son okumalar sıfırlandı.");
+    }
+
+
+    // Event Listener'lar
+    ipInput.addEventListener('change', loadInterfaces); // IP değiştiğinde arayüzleri yeniden yükle
+    communityInput.addEventListener('change', loadInterfaces); // Community değiştiğinde arayüzleri yeniden yükle
+    startTestButton.addEventListener('click', startTest);
+    stopTestButton.addEventListener('click', stopTest);
+    resetChartButton.addEventListener('click', resetChart); // Yeni buton için event listener
+
+    // Sayfa yüklendiğinde arayüzleri otomatik yükle (IP varsa) ve grafiği başlat
+    window.onload = () => {
+        console.log("DEBUG: window.onload çağrıldı.");
+        initChart(); // Sayfa yüklendiğinde grafiği başlat
+        if (ipInput.value.trim()) {
+            loadInterfaces();
+        }
+    };
+</script>
+</body>
+</html>
