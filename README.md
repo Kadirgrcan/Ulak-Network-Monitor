@@ -60,11 +60,13 @@ Sisteme kayıtlı toplam cihaz sayısını, aktif uyarıların anlık sayısın�
 
 ### Gerçek Zamanlı SpeedTest
 
--   **Teknik Detay:** SNMP aracılığıyla belirli bir ağ arayüzünün `ifInOctets` ve `ifOutOctets` sayaçlarını düzenli aralıklarla sorgular. İki ardışık okuma arasındaki bayt farkını geçen süreye bölerek anlık indirme ve yükleme hızlarını (Mbps cinsinden) hesaplar. Counter64 OID'leri kullanılarak büyük trafik değerleri doğru şekilde işlenir.
+Ağ bağlantısının anlık performansını doğrudan ölçer.
+
+-   **Teknik Detay:** Sistemdeki `speedtest-cli` komut satırı aracı, Python'ın `subprocess` modülü aracılığıyla `--json` parametresiyle çalıştırılır.
     
--   **Görselleştirme:** Chart.js kütüphanesi kullanılarak indirme ve yükleme hızları canlı olarak bir çizgi grafikte gösterilir. Zaman ekseni için moment.js ve chartjs-adapter-moment adaptörü kullanılır.
+-   **Metrikler:** Ping süresi (ms), İndirme hızı (Mbps), Yükleme hızı (Mbps), test sunucusu ve İnternet Servis Sağlayıcısı (ISP) bilgileri.
     
--   **Uygulama:** AJAX çağrıları ile Flask backend'indeki `/get_speed_data` endpoint'ine istek atılır ve dönen veriler JavaScript ile işlenerek grafik güncellenir.
+-   **Hata Yönetimi:**  `speedtest-cli` çıktısındaki olası eksik 'isp' bilgisi (`KeyError`) veya `speedtest.net` sunucularına erişim sorunları (örn. `HTTP 403 Forbidden`) gibi hatalar ele alınmıştır.
     
 
 ### Cihaz Yönetimi
@@ -254,8 +256,10 @@ Uygulama arayüzü oldukça sezgiseldir ve Bootstrap ile modern bir tasarıma sa
 │   ├── speedtest.html      # Gerçek zamanlı SpeedTest sayfası (Chart.js entegrasyonlu).
 │   ├── cihazlar.html       # Cihaz yönetimi (ekleme/düzenleme/silme) sayfası.
 │   ├── alerts.html         # Aktif uyarıları gösteren sayfa.
-│   └── alerts_history.html # Tüm uyarıların geçmişini gösteren sayfa.
+│   ├── alerts_history.html # Tüm uyarıların geçmişini gösteren sayfa.
+│   └── kayitlar.html       # Kayıtları veya logları gösteren sayfa (assuming its purpose).
 └── data/                   # Uygulama tarafından oluşturulan SQLite veritabanı dosyası (tarama.db) için dizin.
+
 
 ```
 
