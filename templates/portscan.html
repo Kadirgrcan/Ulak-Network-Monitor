@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Port Tarama</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .info-box {
+            background-color: #eaf6ff;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            color: #333;
+        }
+        .info-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .info-box li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Port Tarama Aracı</h1>
+        <p>Belirli bir IP adresindeki portların açık olup olmadığını kontrol edin.</p>
+
+        <form action="/portscan" method="GET">
+            <div class="form-group">
+                <label for="ip">IP Adresi:</label>
+                <input type="text" id="ip" name="ip" placeholder="örn: 192.168.1.1 veya google.com" required>
+            </div>
+            <div class="form-group">
+                <label for="portlar">Taranacak Portlar (virgülle ayırın):</label>
+                <input type="text" id="portlar" name="portlar" placeholder="örn: 80,443,22,8080" required>
+            </div>
+            <button type="submit">Tara</button>
+        </form>
+
+        <div class="info-box">
+            <h3>Kullanım İpuçları:</h3>
+            <ul>
+                <li><b>IP Adresi:</b> Taramak istediğiniz cihazın IP adresini (örn: <code>192.168.1.1</code>) veya alan adını (örn: <code>google.com</code>) girin.</li>
+                <li><b>Taranacak Portlar:</b> Birden fazla portu virgülle ayırarak girebilirsiniz (örn: <code>80,443,22</code>).</li>
+                <li>Yaygın portlar:
+                    <ul>
+                        <li><code>20, 21</code> (FTP)</li>
+                        <li><code>22</code> (SSH)</li>
+                        <li><code>23</code> (Telnet)</li>
+                        <li><code>25</code> (SMTP)</li>
+                        <li><code>53</code> (DNS)</li>
+                        <li><code>80</code> (HTTP)</li>
+                        <li><code>110</code> (POP3)</li>
+                        <li><code>143</code> (IMAP)</li>
+                        <li><code>443</code> (HTTPS)</li>
+                        <li><code>3389</code> (RDP)</li>
+                        <li><code>8080</code> (HTTP Alternatif)</li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ulak Haberleşme - Gerçek Zamanlı SpeedTest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f0f2f5;
+            font-family: 'Inter', sans-serif;
+            color: #343a40;
+        }
+        .navbar {
+            background: #2c3e50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #ffffff !important;
+        }
+        .header-section {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(to right, #3498db, #2980b9); /* Mavi gradient */
+            color: white;
+            margin-bottom: 30px;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .header-section h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 15px;
+        }
+        .btn-custom {
+            background-color: #28a745; /* Yeşil */
+            border-color: #28a745;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-custom:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+            transform: translateY(-2px);
+        }
+        .btn-secondary-custom {
+            background-color: #6c757d; /* Gri */
+            border-color: #6c757d;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-secondary-custom:hover {
+            background-color: #5a6268;
+            border-color: #545b62;
+            transform: translateY(-2px);
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-top: 50px;
+        }
+        .speed-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #3498db;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .speed-label {
+            font-size: 1.2rem;
+            color: #6c757d;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #3498db;
+        }
+        /* Chart için ek stil */
+        .chart-container {
+            position: relative;
+            height: 400px; /* Grafiğin yüksekliğini ayarla */
+            width: 100%;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">🌐 Ulak Haberleşme</a>
+    </div>
+</nav>
+
+<div class="header-section">
+    <h1>Gerçek Zamanlı İnternet Hız Testi</h1>
+    <p>Mevcut internet bağlantınızın anlık indirme ve yükleme hızlarını ölçün.</p>
+</div>
+
+<div class="container">
+    <div class="card">
+        <div class="card-header">SpeedTest Başlat</div>
+        <div class="card-body">
+            <button type="button" class="btn btn-custom" id="startTestButton">
+                <i class="fas fa-play me-2"></i> Testi Başlat
+            </button>
+            <button type="button" class="btn btn-secondary-custom" id="stopTestButton" style="display: none;">
+                <i class="fas fa-stop me-2"></i> Testi Durdur
+            </button>
+            <button type="button" class="btn btn-secondary-custom" id="resetChartButton" style="display: none;">
+                <i class="fas fa-sync-alt me-2"></i> Grafiği Sıfırla
+            </button>
+            <div id="loadingSpinner" class="text-center mt-3" style="display: none;">
+                <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Yükleniyor...</span>
+                </div>
+                <p class="mt-2">Hız testi başlatılıyor...</p>
+            </div>
+            <div id="errorMessage" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">Anlık Hızlar</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="speed-display" id="downloadSpeedDisplay">0.00</div>
+                    <div class="speed-label">İndirme Hızı (Mbps)</div>
+                </div>
+                <div class="col-md-6">
+                    <div class="speed-display" id="uploadSpeedDisplay">0.00</div>
+                    <div class="speed-label">Yükleme Hızı (Mbps)</div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="speedChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <p>&copy; 2025 Ulak Haberleşme. Tüm hakları saklıdır.</p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+    const startTestButton = document.getElementById('startTestButton');
+    const stopTestButton = document.getElementById('stopTestButton');
+    const resetChartButton = document.getElementById('resetChartButton');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorMessage = document.getElementById('errorMessage');
+    const downloadSpeedDisplay = document.getElementById('downloadSpeedDisplay');
+    const uploadSpeedDisplay = document.getElementById('uploadSpeedDisplay');
+    const ctx = document.getElementById('speedChart').getContext('2d');
+
+    let speedChart;
+    let fetchIntervalId = null; // Periyodik veri çekme interval'i için ID
+    let currentPollingRate = 3000; // Varsayılan 3 saniye (3000 ms)
+
+    // Chart.js grafiğini başlatma
+    function initChart() {
+        console.log("DEBUG: initChart() called.");
+        if (speedChart) {
+            speedChart.destroy(); // Mevcut grafik varsa yok et
+        }
+        speedChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'İndirme Hızı (Mbps)',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    fill: true,
+                    tension: 0.1
+                },
+                {
+                    label: 'Yükleme Hızı (Mbps)',
+                    data: [],
+                    borderColor: 'rgb(255, 99, 132)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    fill: true,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Hız (Mbps)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Zaman'
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    legend: {
+                        display: true
+                    }
+                }
+            }
+        });
+        console.log("DEBUG: Chart initialized.");
+    }
+
+    // Gerçek zamanlı hız verilerini çeken fonksiyon
+    async function fetchSpeedData() {
+        console.log("DEBUG: fetchSpeedData() called.");
+        errorMessage.style.display = 'none'; // Hata mesajını gizle
+        try {
+            const response = await fetch('/run_internet_speedtest'); // Yeni speedtest endpoint'i
+            const data = await response.json();
+            console.log("DEBUG: Speedtest data received:", data);
+
+            if (data.error) {
+                errorMessage.textContent = `Hata: ${data.error}`;
+                errorMessage.style.display = 'block';
+                stopTest(); // Hata durumunda testi durdur
+                return;
+            }
+
+            const downloadSpeedMbps = data.download_speed;
+            const uploadSpeedMbps = data.upload_speed;
+            const timestamp = new Date().toLocaleTimeString();
+
+            // Hız değerlerini güncelle
+            downloadSpeedDisplay.textContent = downloadSpeedMbps.toFixed(2);
+            uploadSpeedDisplay.textContent = uploadSpeedMbps.toFixed(2);
+
+            // Grafik verilerini güncelle
+            speedChart.data.labels.push(timestamp);
+            speedChart.data.datasets[0].data.push(downloadSpeedMbps);
+            speedChart.data.datasets[1].data.push(uploadSpeedMbps);
+
+            // Yalnızca son N veriyi tut (örneğin 30 veri noktası)
+            const maxDataPoints = 30;
+            if (speedChart.data.labels.length > maxDataPoints) {
+                speedChart.data.labels.shift();
+                speedChart.data.datasets[0].data.shift();
+                speedChart.data.datasets[1].data.shift();
+            }
+
+            speedChart.update();
+            console.log("DEBUG: Chart updated with new data.");
+
+        } catch (error) {
+            console.error("ERROR: Speed test verisi çekilirken hata oluştu:", error);
+            errorMessage.textContent = `Veri çekilirken hata oluştu: ${error.message}`;
+            errorMessage.style.display = 'block';
+            stopTest(); // Hata durumunda testi durdur
+        } finally {
+            loadingSpinner.style.display = 'none'; // Veri geldikten sonra spinner'ı gizle
+        }
+    }
+
+    // Testi başlatan fonksiyon
+    function startTest() {
+        console.log("DEBUG: startTest() called.");
+        // Butonları ve spinner durumunu ayarla
+        startTestButton.disabled = true;
+        stopTestButton.style.display = 'inline-block';
+        resetChartButton.style.display = 'inline-block';
+        loadingSpinner.style.display = 'block';
+        errorMessage.style.display = 'none';
+
+        // İlk veriyi hemen çek
+        fetchSpeedData();
+        // Belirli aralıklarla veri çekmeye başla
+        fetchIntervalId = setInterval(fetchSpeedData, currentPollingRate);
+        console.log("DEBUG: Speed test started with interval:", currentPollingRate);
+    }
+
+    // Testi durduran fonksiyon
+    function stopTest() {
+        console.log("DEBUG: stopTest() called.");
+        clearInterval(fetchIntervalId); // Interval'i durdur
+        fetchIntervalId = null;
+        startTestButton.disabled = false; // Başlat butonunu tekrar etkinleştir
+        stopTestButton.style.display = 'none'; // Durdur butonunu gizle
+        // resetChartButton.style.display = 'none'; // Reset butonunu gizleme, kullanıcı istediğinde sıfırlayabilsin
+        loadingSpinner.style.display = 'none';
+        console.log("DEBUG: Speed test stopped, controls enabled.");
+    }
+
+    // Grafiği sıfırlayan fonksiyon
+    function resetChart() {
+        console.log("DEBUG: resetChart() called.");
+        if (speedChart) {
+            speedChart.data.labels = [];
+            speedChart.data.datasets[0].data = [];
+            speedChart.data.datasets[1].data = [];
+            speedChart.update();
+            console.log("DEBUG: Grafik verileri sıfırlandı.");
+        }
+        downloadSpeedDisplay.textContent = '0.00';
+        uploadSpeedDisplay.textContent = '0.00';
+        console.log("DEBUG: Hız göstergeleri ve son okumalar sıfırlandı.");
+    }
+
+
+    // Event Listener'lar
+    startTestButton.addEventListener('click', startTest);
+    stopTestButton.addEventListener('click', stopTest);
+    resetChartButton.addEventListener('click', resetChart);
+
+    // Sayfa yüklendiğinde grafiği başlat
+    window.onload = () => {
+        console.log("DEBUG: window.onload called.");
+        initChart(); // Sayfa yüklendiğinde grafiği başlat
+    };
+</script>
+</body>
+</html>

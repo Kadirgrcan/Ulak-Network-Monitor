@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ulak Haberleşme - Aktif Uyarılar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #f0f2f5;
+            font-family: 'Inter', sans-serif;
+            color: #343a40;
+        }
+        .navbar {
+            background: #2c3e50;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #ffffff !important;
+        }
+        .header-section {
+            text-align: center;
+            padding: 40px 20px;
+            background: linear-gradient(to right, #e74c3c, #c0392b); /* Kırmızımsı gradient */
+            color: white;
+            margin-bottom: 30px;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+        .header-section h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .header-section p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #343a40;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 15px;
+        }
+        .table thead {
+            background: #e74c3c; /* Kırmızımsı */
+            color: white;
+        }
+        .table th {
+            font-weight: 600;
+            padding: 15px;
+        }
+        .table td {
+            padding: 12px;
+            vertical-align: middle;
+        }
+        .table-bordered {
+            border: 1px solid #dee2e6;
+        }
+        .table-bordered th, .table-bordered td {
+            border: 1px solid #dee2e6;
+        }
+        .status-active {
+            color: #dc3545; /* Kırmızı */
+            font-weight: 600;
+        }
+        .status-resolved {
+            color: #28a745; /* Yeşil */
+            font-weight: 600;
+        }
+        .btn-custom-back {
+            background-color: #6c757d; /* Gri */
+            border-color: #6c757d;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-custom-back:hover {
+            background-color: #5a6268;
+            border-color: #5a6268;
+            transform: translateY(-2px);
+        }
+        .btn-history {
+            background-color: #007bff; /* Mavi */
+            border-color: #007bff;
+            color: white;
+            font-weight: 600;
+            border-radius: 8px;
+            padding: 10px 20px;
+            transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .btn-history:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">🌐 Ulak Haberleşme</a>
+    </div>
+</nav>
+
+<div class="header-section">
+    <h1>Aktif Sistem Uyarıları</h1>
+    <p>Ağınızdaki anlık sorunları ve kritik durumları takip edin.</p>
+</div>
+
+<div class="container">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            Aktif Uyarı Listesi
+            <a href="/alerts/history" class="btn btn-history">
+                <i class="fas fa-history me-2"></i> Geçmiş Uyarıları Görüntüle
+            </a>
+        </div>
+        <div class="card-body">
+            {% if alerts %}
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Cihaz Adı</th>
+                                <th>IP Adresi</th>
+                                <th>Metrik</th>
+                                <th>Değer</th>
+                                <th>Eşik</th>
+                                <th>Mesaj</th>
+                                <th>Zaman Damgası</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in alerts %}
+                                <tr>
+                                    <td>{{ alert.id }}</td>
+                                    <td>{{ alert.device_name }}</td>
+                                    <td>{{ alert.ip }}</td>
+                                    <td>{{ alert.metric }}</td>
+                                    <td>{{ "%.2f"|format(alert.value) }}</td>
+                                    <td>{{ "%.2f"|format(alert.threshold) }}</td>
+                                    <td>{{ alert.message }}</td>
+                                    <td>{{ alert.timestamp }}</td>
+                                    <td>
+                                        <span class="status-{{ alert.status }}">
+                                            {{ "Aktif" if alert.status == 'active' else "Çözüldü" }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center text-muted">Şu anda aktif uyarı bulunmamaktadır.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="/" class="btn btn-custom-back">
+            <i class="fas fa-arrow-left me-2"></i> Ana Sayfaya Dön
+        </a>
+    </div>
+</div>
+
+<footer class="footer">
+    © 2025 Ulak Haberleşme Staj Projesi. Tüm Hakları Saklıdır.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

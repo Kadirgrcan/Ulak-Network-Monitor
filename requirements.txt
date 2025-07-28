@@ -1,0 +1,11 @@
+APScheduler==3.11.0
+Flask==3.1.1
+requests==2.32.4
+# pyasn1 uyumluluk sorunlarını çözmek için spesifik sürümler
+pysnmp==4.4.12
+pyasn1==0.4.6
+pyasn1-modules==0.3.0 # Sürüm 0.4.2'den 0.3.0'a düşürüldü
+pysmi==0.3.4
+pysnmp-mibs==0.1.6
+gunicorn==22.0.0
+speedtest-cli==2.1.3
