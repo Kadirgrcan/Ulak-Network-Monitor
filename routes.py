@@ -221,7 +221,31 @@ def register_routes(app, _get_snmp_value_func, _snmpwalk_parse_table_func, _run_
 
         return render_template("portscan_result.html", ip=ip, results=results)
 
-
+    @app.route("/api/speedtest-data")
+    def speedtest_data():
+        """Gerçek zamanlı speedtest verilerini döndürür."""
+        print("DEBUG (routes): /api/speedtest-data çağrıldı.")
+        download_speed_mbps = 0
+        upload_speed_mbps = 0
+        try:
+            # app.py'den pass edilen fonksiyonu çağır
+            speed_results = _run_internet_speedtest()
+            if speed_results:
+                download_speed_mbps = speed_results.get("download_mbps", 0)
+                upload_speed_mbps = speed_results.get("upload_mbps", 0)
+                print(f"DEBUG (routes): Speedtest sonuçları - Download: {download_speed_mbps}, Upload: {upload_speed_mbps}")
+            else:
+                print("DEBUG (routes): _run_internet_speedtest() boş sonuç döndürdü.")
+        except Exception as e:
+            print(f"ERROR (routes): Speedtest verisi alınırken hata oluştu: {e}")
+            # Hata durumunda boş veya sıfır değerler döndür
+            pass
+        
+        return jsonify({
+            "timestamp": datetime.now().isoformat(),
+            "download_mbps": download_speed_mbps,
+            "upload_mbps": upload_speed_mbps
+        })
 
     # BU SATIRIN BAŞINDA KESİNLİKLE HİÇBİR BOŞLUK OLMAYACAK.
     # 'def register_routes' ile aynı girinti seviyesinde olmalı (yani, dosyanın en sol kenarından itibaren hiç boşluksuz).

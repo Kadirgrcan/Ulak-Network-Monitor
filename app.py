@@ -161,19 +161,32 @@ def _get_snmp_value(ip, community, oid, type_prefix=None):
 def _run_internet_speedtest():
     """Internet hız testini speedtest-cli ile çalıştırır ve sonuçları döndürür."""
     try:
-        # speedtest-cli komutunu çalıştır
+        print("DEBUG (Flask): speedtest-cli komutu çalıştırılıyor...")
         process = subprocess.Popen(['speedtest', '--json'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate(timeout=60) # 60 saniye zaman aşımı
+        stdout, stderr = process.communicate(timeout=60)
+
+        print(f"DEBUG (Flask): speedtest-cli stdout: {stdout.decode('utf-8')[:500]}...") # İlk 500 karakter
+        print(f"DEBUG (Flask): speedtest-cli stderr: {stderr.decode('utf-8')}")
+        print(f"DEBUG (Flask): speedtest-cli returncode: {process.returncode}")
 
         if process.returncode == 0:
             result = json.loads(stdout.decode('utf-8'))
-            download_mbps = round(result.get('download', 0) / 1_000_000, 2) # .get() ile güvenli erişim
-            upload_mbps = round(result.get('upload', 0) / 1_000_000, 2)   # .get() ile güvenli erişim
-            ping_ms = round(result.get('ping', 0), 2)                     # .get() ile güvenli erişim
-            
-            # 'server' anahtarının varlığını ve içindeki 'name' anahtarını kontrol edin
+
+            # Ham download/upload değerlerini loglayın
+            raw_download_bps = result.get('download', 0)
+            raw_upload_bps = result.get('upload', 0)
+            print(f"DEBUG (Flask): Ham Download (bps): {raw_download_bps}")
+            print(f"DEBUG (Flask): Ham Upload (bps): {raw_upload_bps}")
+
+            download_mbps = round(raw_download_bps / 1_000_000, 2)
+            upload_mbps = round(raw_upload_bps / 1_000_000, 2)
+            ping_ms = round(result.get('ping', 0), 2)
+
+            print(f"DEBUG (Flask): Hesaplanan Download (Mbps): {download_mbps}")
+            print(f"DEBUG (Flask): Hesaplanan Upload (Mbps): {upload_mbps}")
+
             server_name = result.get('server', {}).get('name', 'Bilinmiyor')
-            isp_name = result.get('isp', 'Bilinmiyor') # Burayı değiştirdik: 'isp' yoksa 'Bilinmiyor' döner
+            isp_name = result.get('client', {}).get('isp', 'Bilinmiyor') # 'isp' server altında değil, 'client' altında
 
             return {
                 "success": True,
@@ -181,24 +194,24 @@ def _run_internet_speedtest():
                 "upload": upload_mbps,
                 "ping": ping_ms,
                 "server_name": server_name,
-                "isp": isp_name # Güncellenmiş satır
+                "isp": isp_name
             }
         else:
-            print(f"ERROR: Speedtest çalıştırılırken hata: {stderr.decode('utf-8')}")
+            print(f"ERROR (Flask): Speedtest çalıştırılırken hata: {stderr.decode('utf-8')}")
             return {"success": False, "error": stderr.decode('utf-8')}
     except FileNotFoundError:
-        print("ERROR: 'speedtest' komutu bulunamadı. Lütfen 'speedtest-cli'nin yüklü olduğundan emin olun.")
+        print("ERROR (Flask): 'speedtest' komutu bulunamadı. Lütfen 'speedtest-cli'nin yüklü olduğundan emin olun.")
         return {"success": False, "error": "'speedtest' komutu bulunamadı."}
     except subprocess.TimeoutExpired:
         process.kill()
         stdout, stderr = process.communicate()
-        print(f"ERROR: Speedtest zaman aşımına uğradı. Çıktı: {stdout.decode('utf-8')}, Hata: {stderr.decode('utf-8')}")
+        print(f"ERROR (Flask): Speedtest zaman aşımına uğradı. Çıktı: {stdout.decode('utf-8')}, Hata: {stderr.decode('utf-8')}")
         return {"success": False, "error": "Speedtest zaman aşımına uğradı."}
-    except json.JSONDecodeError as e: # Geçersiz JSON çıktısını yakalamak için ekledik
-        print(f"ERROR: Speedtest çıktısı JSON olarak ayrıştırılamadı: {e}. Çıktı: {stdout.decode('utf-8')}")
+    except json.JSONDecodeError as e:
+        print(f"ERROR (Flask): Speedtest çıktısı JSON olarak ayrıştırılamadı: {e}. Çıktı: {stdout.decode('utf-8')}")
         return {"success": False, "error": f"Speedtest çıktısı ayrıştırma hatası: {e}"}
     except Exception as e:
-        print(f"ERROR: Speedtest sırasında beklenmeyen hata: {e}")
+        print(f"ERROR (Flask): Speedtest sırasında beklenmeyen hata: {e}")
         return {"success": False, "error": f"Beklenmeyen hata: {e}"}
 
 # IP adresinden coğrafi konum bilgisi almak için yardımcı fonksiyon

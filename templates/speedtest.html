@@ -253,54 +253,60 @@
     }
 
     // Gerçek zamanlı hız verilerini çeken fonksiyon
-    async function fetchSpeedData() {
-        console.log("DEBUG: fetchSpeedData() called.");
-        errorMessage.style.display = 'none'; // Hata mesajını gizle
-        try {
-            const response = await fetch('/run_internet_speedtest'); // Yeni speedtest endpoint'i
-            const data = await response.json();
-            console.log("DEBUG: Speedtest data received:", data);
+   async function fetchSpeedData() {
+    console.log("DEBUG: fetchSpeedData() called.");
+    errorMessage.style.display = 'none'; // Hata mesajını gizle
+    try {
+        // NOT: Eğer Flask backend'inizde API endpoint'ini /api/speedtest-data olarak değiştirdiyseniz,
+        // aşağıdaki satırı `const response = await fetch('/api/speedtest-data');` olarak değiştirin.
+        // Mevcut durumda, daha önceki loglarınıza göre '/run_internet_speedtest' ile çalışmaktadır.
+        const response = await fetch('/run_internet_speedtest'); // Mevcut speedtest endpoint'i
+        const data = await response.json();
+        console.log("DEBUG: Speedtest data received:", data);
 
-            if (data.error) {
-                errorMessage.textContent = `Hata: ${data.error}`;
-                errorMessage.style.display = 'block';
-                stopTest(); // Hata durumunda testi durdur
-                return;
-            }
-
-            const downloadSpeedMbps = data.download_speed;
-            const uploadSpeedMbps = data.upload_speed;
-            const timestamp = new Date().toLocaleTimeString();
-
-            // Hız değerlerini güncelle
-            downloadSpeedDisplay.textContent = downloadSpeedMbps.toFixed(2);
-            uploadSpeedDisplay.textContent = uploadSpeedMbps.toFixed(2);
-
-            // Grafik verilerini güncelle
-            speedChart.data.labels.push(timestamp);
-            speedChart.data.datasets[0].data.push(downloadSpeedMbps);
-            speedChart.data.datasets[1].data.push(uploadSpeedMbps);
-
-            // Yalnızca son N veriyi tut (örneğin 30 veri noktası)
-            const maxDataPoints = 30;
-            if (speedChart.data.labels.length > maxDataPoints) {
-                speedChart.data.labels.shift();
-                speedChart.data.datasets[0].data.shift();
-                speedChart.data.datasets[1].data.shift();
-            }
-
-            speedChart.update();
-            console.log("DEBUG: Chart updated with new data.");
-
-        } catch (error) {
-            console.error("ERROR: Speed test verisi çekilirken hata oluştu:", error);
-            errorMessage.textContent = `Veri çekilirken hata oluştu: ${error.message}`;
+        if (data.error) {
+            errorMessage.textContent = `Hata: ${data.error}`;
             errorMessage.style.display = 'block';
             stopTest(); // Hata durumunda testi durdur
-        } finally {
-            loadingSpinner.style.display = 'none'; // Veri geldikten sonra spinner'ı gizle
+            return;
         }
+
+        // HATA DÜZELTME BURADA: `data.download_speed` yerine `data.download` kullanılıyor.
+        // Flask backend'inizin gönderdiği anahtar isimleriyle uyumlu hale getirildi.
+        const downloadSpeedMbps = typeof data.download === 'number' ? data.download : 0.00;
+        const uploadSpeedMbps = typeof data.upload === 'number' ? data.upload : 0.00;
+
+        const timestamp = new Date().toLocaleTimeString();
+
+        // Hız değerlerini güncelle
+        downloadSpeedDisplay.textContent = downloadSpeedMbps.toFixed(2);
+        uploadSpeedDisplay.textContent = uploadSpeedMbps.toFixed(2);
+
+        // Grafik verilerini güncelle
+        speedChart.data.labels.push(timestamp);
+        speedChart.data.datasets[0].data.push(downloadSpeedMbps);
+        speedChart.data.datasets[1].data.push(uploadSpeedMbps);
+
+        // Yalnızca son N veriyi tut (örneğin 30 veri noktası)
+        const maxDataPoints = 30;
+        if (speedChart.data.labels.length > maxDataPoints) {
+            speedChart.data.labels.shift();
+            speedChart.data.datasets[0].data.shift();
+            speedChart.data.datasets[1].data.shift();
+        }
+
+        speedChart.update();
+        console.log("DEBUG: Chart updated with new data.");
+
+    } catch (error) {
+        console.error("ERROR: Speed test verisi çekilirken hata oluştu:", error);
+        errorMessage.textContent = `Veri çekilirken hata oluştu: ${error.message}`;
+        errorMessage.style.display = 'block';
+        stopTest(); // Hata durumunda testi durdur
+    } finally {
+        loadingSpinner.style.display = 'none'; // Veri geldikten sonra spinner'ı gizle
     }
+}
 
     // Testi başlatan fonksiyon
     function startTest() {
